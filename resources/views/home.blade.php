@@ -11,6 +11,8 @@
 @extends('layouts.app')
 
 @section('content')
+
+
 <div class="row">
     <div class="col-xl-3 col-lg-3 col-md-3 col-sm-6 grid-margin stretch-card">
             <div class="card card-statistics">
@@ -136,8 +138,17 @@
                           </a>
                           </td>
                           <td>
-                          
-                            {{$data->buku->judul}}
+                            <ul>
+                              @if(isset($data->buku))
+                                @foreach($data->buku as $book)
+
+                                  <li>
+                                    {{$book->judul}}                                  
+                                  </li>
+                                @endforeach
+                              @endif
+                            </ul>
+                            {{-- {{$data->buku->judul}} --}}
                           
                           </td>
 
