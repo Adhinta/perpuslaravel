@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Redirect;
 use Auth;
 use DB;
 use RealRashid\SweetAlert\Facades\Alert;
+use PhpParser\Node\Stmt\Catch_;
 
 class TransaksiController extends Controller
 {
@@ -29,14 +30,14 @@ class TransaksiController extends Controller
 
     public function index()
     {
-        if(Auth::user()->level == 'user')
-        {
-            $datas = Transaksi::where('anggota_id', Auth::user()->anggota->id)
-                                ->get();
+        Transaksi::books();
+        if (Auth::user()->level == 'user') {
+            $trx = Transaksi::books(['anggota_id'=>Auth::user()]);
         } else {
-            $datas = Transaksi::get();
+            $trx = Transaksi::books();
         }
-        return view('transaksi.index', compact('datas'));
+
+        return view('transaksi.index', ['datas'=>$trx]);
     }
 
     /**
@@ -46,7 +47,6 @@ class TransaksiController extends Controller
      */
     public function create()
     {
-        
         $getRow = Transaksi::orderBy('id', 'DESC')->get();
         $rowCount = $getRow->count();
         
@@ -56,15 +56,15 @@ class TransaksiController extends Controller
         
         if ($rowCount > 0) {
             if ($lastId->id < 9) {
-                    $kode = "TR0000".''.($lastId->id + 1);
-            } else if ($lastId->id < 99) {
-                    $kode = "TR000".''.($lastId->id + 1);
-            } else if ($lastId->id < 999) {
-                    $kode = "TR00".''.($lastId->id + 1);
-            } else if ($lastId->id < 9999) {
-                    $kode = "TR0".''.($lastId->id + 1);
+                $kode = "TR0000".''.($lastId->id + 1);
+            } elseif ($lastId->id < 99) {
+                $kode = "TR000".''.($lastId->id + 1);
+            } elseif ($lastId->id < 999) {
+                $kode = "TR00".''.($lastId->id + 1);
+            } elseif ($lastId->id < 9999) {
+                $kode = "TR0".''.($lastId->id + 1);
             } else {
-                    $kode = "TR".''.($lastId->id + 1);
+                $kode = "TR".''.($lastId->id + 1);
             }
         }
 
@@ -90,24 +90,49 @@ class TransaksiController extends Controller
 
         ]);
 
-        $transaksi = Transaksi::create([
-                'kode_transaksi' => $request->get('kode_transaksi'),
-                'tgl_pinjam' => $request->get('tgl_pinjam'),
-                'tgl_kembali' => $request->get('tgl_kembali'),
-                'buku_id' => $request->get('buku_id'),
-                'anggota_id' => $request->get('anggota_id'),
-                'ket' => $request->get('ket'),
-                'status' => 'pinjam'
-            ]);
+        $bukus = explode(",", $request->buku_id);
+        
+        // Masukan transaksi terlebih dahulu
+        $transaksi = new Transaksi();
+        $transaksi->kode_transaksi = $request->get('kode_transaksi');
+        $transaksi->tgl_pinjam = $request->get('tgl_pinjam');
+        $transaksi->tgl_kembali = $request->get('tgl_kembali');
+        $transaksi->anggota_id = $request->get('anggota_id');
+        $transaksi->ket = $request->get('ket');
+        $transaksi->status = 'pinjam';
+        
+        if($transaksi->save()){
+            foreach ($bukus as $id_buku) {
 
-        $transaksi->buku->where('id', $transaksi->buku_id)
-                        ->update([
-                            'jumlah_buku' => ($transaksi->buku->jumlah_buku - 1),
-                            ]);
+                try {
+                    // Masukan kode_transaksi dan id_buku ke buku_transaksi
+                    $insertedBook = DB::table('buku_transaksi')->insert([
+                        'kode_transaksi'=>$transaksi->kode_transaksi,
+                        'buku_id'=>$id_buku
+                    ]);
 
-        alert()->success('Berhasil.','Data telah ditambahkan!');
-        return redirect()->route('transaksi.index');
+                    // Update jumlah buku tersedia
+                    $book = DB::table('buku')->where('id', $id_buku)->first();
+                    $updateBook = Buku::find($book->id);
+                    $updateBook->jumlah_buku = ($book->jumlah_buku - 1);
+                    $updateBook->save();
 
+                } catch(\Illuminate\Database\QueryException $e) {
+                    return response()->json([
+                        'success'=>false
+                    ]);
+                }
+            }
+
+        }
+
+
+
+        return response()->json([
+            'success'=>true,
+        ]);
+        // alert()->success('Berhasil.', 'Data telah ditambahkan!');
+        // return redirect()->route('transaksi.index');
     }
 
     /**
@@ -118,17 +143,22 @@ class TransaksiController extends Controller
      */
     public function show($id)
     {
+        $trx = Transaksi::findOrFail($id);
 
-        $data = Transaksi::findOrFail($id);
+        $t = DB::table('buku_transaksi')
+            ->leftJoin('buku', 'buku.id', '=', 'buku_transaksi.buku_id')
+            ->where(['kode_transaksi'=>$trx->kode_transaksi])->get();
+        
+        $trx->buku = $t;
 
 
-        if((Auth::user()->level == 'user') && (Auth::user()->anggota->id != $data->anggota_id)) {
-                Alert::info('Oopss..', 'Anda dilarang masuk ke area ini.');
-                return redirect()->to('/');
+        if ((Auth::user()->level == 'user') && (Auth::user()->anggota->id != $data->anggota_id)) {
+            Alert::info('Oopss..', 'Anda dilarang masuk ke area ini.');
+            return redirect()->to('/');
         }
 
 
-        return view('transaksi.show', compact('data'));
+        return view('transaksi.show', ['data'=>$trx]);
     }
 
     /**
@@ -138,12 +168,12 @@ class TransaksiController extends Controller
      * @return \Illuminate\Http\Response
      */
     public function edit($id)
-    {   
+    {
         $data = Transaksi::findOrFail($id);
 
-        if((Auth::user()->level == 'user') && (Auth::user()->anggota->id != $data->anggota_id)) {
-                Alert::info('Oopss..', 'Anda dilarang masuk ke area ini.');
-                return redirect()->to('/');
+        if ((Auth::user()->level == 'user') && (Auth::user()->anggota->id != $data->anggota_id)) {
+            Alert::info('Oopss..', 'Anda dilarang masuk ke area ini.');
+            return redirect()->to('/');
         }
 
         return view('buku.edit', compact('data'));
@@ -158,18 +188,22 @@ class TransaksiController extends Controller
      */
     public function update(Request $request, $id)
     {
+        // Ubah data menjadi kembai
         $transaksi = Transaksi::find($id);
+        $transaksi->status = 'kembali';
+        $transaksi->save();
 
-        $transaksi->update([
-                'status' => 'kembali'
-                ]);
 
-        $transaksi->buku->where('id', $transaksi->buku->id)
-                        ->update([
-                            'jumlah_buku' => ($transaksi->buku->jumlah_buku + 1),
-                            ]);
-
-        alert()->success('Berhasil.','Data telah diubah!');
+        // Kembalikan jumlah buku yang kembali
+        $trx = Transaksi::books(['id'=>$id])->first();
+        foreach($trx->buku as $book){
+            // dd($book->id);
+            $b = Buku::find($book->id);
+            // dd($b);
+            $b->jumlah_buku = ($book->jumlah_buku + 1);
+            $b->save();
+        }
+        alert()->success('Berhasil.', 'Data telah diubah!');
         return redirect()->route('transaksi.index');
     }
 
@@ -181,8 +215,12 @@ class TransaksiController extends Controller
      */
     public function destroy($id)
     {
-        Transaksi::find($id)->delete();
-        alert()->success('Berhasil.','Data telah dihapus!');
+        // $trx = Transaksi::find($id);
+        $trx = Transaksi::find($id);
+        DB::table('buku_transaksi')->where(['kode_transaksi'=>$trx->kode_transaksi])->delete();
+        $trx->delete();
+        
+        alert()->success('Berhasil.', 'Data telah dihapus!');
         return redirect()->route('transaksi.index');
     }
 }

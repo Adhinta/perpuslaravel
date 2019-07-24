@@ -1,23 +1,107 @@
 @section('js')
  <script type="text/javascript">
   $(document).on('click', '.pilih_anggota', function (e) {
-                document.getElementById("anggota_id").value = $(this).attr('data-anggota_id');
-                document.getElementById("anggota_nama").value = $(this).attr('data-anggota_nama');
-                $('#myModal2').modal('hide');
-            });
-   $(document).on('click', '.pilih', function (e) {
-                document.getElementById("buku_judul").value = $(this).attr('data-buku_judul');
-                document.getElementById("buku_id").value = $(this).attr('data-buku_id');
-                $('#myModal').modal('hide');
-            });
+      document.getElementById("anggota_id").value = $(this).attr('data-anggota_id');
+      document.getElementById("anggota_nama").value = $(this).attr('data-anggota_nama');
+      $('#myModal2').modal('hide');
+  });
+  //  $(document).on('click', '.pilih', function (e) {
+  //               document.getElementById("buku_judul").value = $(this).attr('data-buku_judul');
+  //               document.getElementById("buku_id").value = $(this).attr('data-buku_id');
+  //               $('#myModal').modal('hide');
+  //           });
 
             
           
-             $(function () {
-                $("#lookup, #lookup2").dataTable();
-            });
+  //            $(function () {
+  //               $("#lookup, #lookup2").dataTable();
+  //           });
 
-        </script>
+  
+  var Table = {
+    $el:$("#list-buku"),
+    bukus:{!! json_encode($bukus) !!},
+    bukuCart:[],
+    renderTercentang:function(e){
+      $("#buku-tercentang tbody").empty();
+
+      var bukuCart = this.bukuCart.map((val) => {
+        var result;
+        this.bukus.forEach((v) => {
+          if(val.value == v.id){
+            result = v;
+          }
+        });
+        return result;
+      });
+
+
+      bukuCart.forEach((val) => {
+        $("#buku-tercentang").append(`<tr>
+            <td>${val.id}</td>
+            <td>${val.no_inventaris}</td>
+            <td>${val.judul}</td>
+          </tr>`);
+      });
+    },
+    submitData:function(){
+      var serialize = $("#form-transaksi").serializeArray();
+      // return;
+      serialize = serialize.map((val) => {
+        if(val.name == 'buku_id'){
+          val.value = this.bukuCart.map((val) => {
+            return val.value;
+          });
+        }
+        return val;
+      });
+      $.ajax({
+        url:"{{ route('transaksi.store') }}",
+        type:'POST',
+        headers:{
+          'X-CSRF-TOKEN':"{{ csrf_token() }}"
+        },
+        data:$.param(serialize)
+      }).done((res) => {
+        if(res.success == true){
+          var c = swal("Success", "", "success");
+          if(c){
+            location.href = "{{ url("/transaksi") }}";
+          }
+        }
+      }).fail((res) => {
+        swal("Masukan data gagal", res.responseJSON.message, "warning");
+      });
+    },
+    submit:function(e){
+      if(e != null){
+        e.preventDefault();
+      }
+      
+      this.bukuCart = $("form#list-buku").serializeArray();
+
+      $("#myModal").modal("hide");
+
+      this.renderTercentang();
+    },
+    init(){
+      console.log("Init dong...", this.bukus);
+      // $(document).ready(() => {
+        console.log("my elf : ", this.$el);
+        $(".main-panel").on('submit', this.$el, (e) => {
+          e.preventDefault();
+          this.submit();
+        });
+        $(".main-panel").on("submit", "#form-transaksi", (e) => {
+          e.preventDefault();
+          this.submitData();
+        // })
+      });
+    }
+  }
+
+  Table.init();
+</script>
 
 @stop
 @section('css')
@@ -27,7 +111,7 @@
 
 @section('content')
 
-<form method="POST" action="{{ route('transaksi.store') }}" enctype="multipart/form-data">
+<form method="POST" id="form-transaksi">
     {{ csrf_field() }}
 <div class="row">
             <div class="col-md-12 d-flex align-items-stretch grid-margin">
@@ -70,14 +154,14 @@
                                 @endif
                             </div>
                         </div>
-
+                        
                          @if(Auth::user()->level == 'admin')
                         <div class="form-group{{ $errors->has('anggota_id') ? ' has-error' : '' }}">
                             <label for="anggota_id" class="col-md-4 control-label">Anggota</label>
                             <div class="col-md-6">
                                 <div class="input-group">
                                 <input id="anggota_nama" type="text" class="form-control" readonly="" required>
-                                <input id="anggota_id" type="hidden" name="anggota_id" value="{{ old('anggota_id') }}" required readonly="">
+                                <input id="anggota_id" type="hidden" name="anggota_id" value="{{ old('user_id') }}" required readonly="">
                                 <span class="input-group-btn">
                                     <button type="button" class="btn btn-warning btn-secondary" data-toggle="modal" data-target="#myModal2"><b>Cari Anggota</b> <span class="fa fa-search"></span></button>
                                 </span>
@@ -127,7 +211,7 @@
                             </div>
                         </div>
                         
-                        <table border="1" width="600">
+                        <table border="1" width="600" id="buku-tercentang">
                         <thead>
                           <tr align="center">
                            <th >
@@ -139,30 +223,16 @@
                           <th>
                             Buku
                           </th>
-                          <th>
-                            Kondisi
-                          </th>
                         </tr>
                         </thead>
 
                         <tbody>
-                          <tr align="center">
-                            <td> 1</td>
-                            <td> </td>
-                            <td> </td>
-                            <td> </td>
-                          </tr>
-                          <tr align="center">
-                            <td> 2</td>
-                            <td> </td>
-                            <td> </td>
-                            <td> </td> 
-                          </tr>
-                          <tr align="center">
-                            <td> 3</td>
-                            <td> </td>
-                            <td> </td>
-                            <td> </td>
+                          <tr>
+                            <td colspan="3">
+                              <br/>
+                              <p class="text-center">Belum ada buku dipilih</p>
+                              <br/>
+                            </td>
                           </tr>
                         </tbody>
                         </table>
@@ -173,7 +243,7 @@
                         <div class="form-group{{ $errors->has('ket') ? ' has-error' : '' }}">
                             <label for="ket" class="col-md-4 control-label">Keterangan</label>
                             <div class="col-md-6">
-                                <input id="ket" type="text" class="form-control" name="ket" value="{{ old('ket') }}">
+                                <input id="ket" type="text" class="form-control" name="ket" value="{{ old('ket') ?? 'Baik' }}">
                                 @if ($errors->has('ket'))
                                     <span class="help-block">
                                         <strong>{{ $errors->first('ket') }}</strong>
@@ -266,47 +336,5 @@
             </div>
         </div>
 
-
-  <!-- Modal -->
-        <div class="modal fade bd-example-modal-lg" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true" >
-  <div class="modal-dialog modal-lg" role="document" >
-    <div class="modal-content" style="background: #fff;">
-      <div class="modal-header">
-        <h5 class="modal-title" id="exampleModalLabel">Cari Buku</h5>
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-          <span aria-hidden="true">&times;</span>
-        </button>
-      </div>
-      <div class="modal-body">
-                        <table id="lookup" class="table table-bordered table-hover table-striped">
-                            <thead>
-                                <tr>
-                                    <th>Judul</th>
-                                    <th>ISBN</th>
-                                    <th>Pengarang</th>
-                                    <th>Tahun</th>
-                                    <th>Stok</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach($bukus as $data)
-                                <tr class="pilih" data-buku_id="<?php echo $data->id; ?>" data-buku_judul="<?php echo $data->judul; ?>" >
-                                    <td>@if($data->cover)
-                            <img src="{{url('images/buku/'. $data->cover)}}" alt="image" style="margin-right: 10px;" />
-                          @else
-                            <img src="{{url('images/buku/default.png')}}" alt="image" style="margin-right: 10px;" />
-                          @endif
-                          {{$data->judul}}</td>
-                                    <td>{{$data->isbn}}</td>
-                                    <td>{{$data->pengarang}}</td>
-                                    <td>{{$data->tahun_terbit}}</td>
-                                    <td>{{$data->jumlah_buku}}</td>
-                                </tr>
-                                @endforeach
-                            </tbody>
-                        </table>  
-                    </div>
-                </div>
-            </div>
-        </div>
+        @include('transaksi.modal-add-buku')
 @endsection

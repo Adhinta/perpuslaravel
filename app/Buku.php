@@ -14,6 +14,6 @@ class Buku extends Model
      */
     public function transaksi()
     {
-    	return $this->hasMany(Transaksi::class);
+    	return $this->belongsToMany(Transaksi::class, 'kode_transaksi', 'buku_id');
     }
 }

@@ -11,7 +11,12 @@
                       <h4 class="card-title">Detail <b>{{$data->kode_transaksi}}</b></h4>
                     <div class="form-group">
                             <div class="col-md-6">
-                                <img width="200" height="200" @if($data->buku->cover) src="{{ asset('images/buku/'.$data->buku->cover) }}" @endif />
+                                @foreach($data->buku as $buku)
+                                    <img width="200" height="200" 
+                                        @if(isset($buku->cover)) 
+                                            src="{{ asset('images/buku/'.$buku->cover) }}" 
+                                        @endif />
+                                @endforeach
                             </div>
                         </div>
                         <div class="form-group{{ $errors->has('kode_transaksi') ? ' has-error' : '' }}">
@@ -37,8 +42,17 @@
                         <div class="form-group">
                             <label for="anggota_id" class="col-md-4 control-label">Buku</label>
                             <div class="col-md-6">
-                                <input id="buku" type="text" class="form-control" readonly="" value="{{$data->buku->judul}}">
-
+                                    
+                                <ul>
+                                @foreach($data->buku as $buku)
+                                <li>
+                                    <a href="{{url('buku/'.$buku->id)}}" target="_blank">
+                                        {{$buku->judul}}
+                                    </a>
+                                </li>    
+                                {{-- <input id="buku" type="text" class="form-control" readonly="" value="{{$buku->judul}}"> --}}
+                                @endforeach
+                                </ul>
                             </div>
                         </div>
 

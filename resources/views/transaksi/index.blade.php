@@ -69,8 +69,11 @@
                           </a>
                           </td>
                           <td>
-                          
-                            {{$data->buku->judul}}
+                            <ol>
+                            @foreach($data->buku as $buku)
+                              <li>{{$buku->judul}}</li>
+                            @endforeach
+                            </ol>
                           
                           </td>
 
