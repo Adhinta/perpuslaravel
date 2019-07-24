@@ -185,23 +185,24 @@ public function transaksi()
 
     public function transaksiPdf(Request $request)
     {
-        $q = Transaksi::query();
+        // $q = Transaksi::query();
 
+        $q = [];
         if($request->get('status')) 
         {
              if($request->get('status') == 'pinjam') {
-                $q->where('status', 'pinjam');
+                $q['status'] = 'pinjam';
             } else {
-                $q->where('status', 'kembali');
+                $q['status'] = 'kembali';
             }
         }
 
         if(Auth::user()->level == 'user')
         {
-            $q->where('anggota_id', Auth::user()->anggota->id);
+            $q['anggota_id'] = Auth::user()->anggota->id;
         }
 
-        $datas = $q->get();
+        $datas = Transaksi::books($q);
 
        // return view('laporan.transaksi_pdf', compact('datas'));
        $pdf = PDF::loadView('laporan.transaksi_pdf', compact('datas'));

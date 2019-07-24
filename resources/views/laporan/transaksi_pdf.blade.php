@@ -115,8 +115,11 @@
                             {{$data->kode_transaksi}}
                           </td>
                           <td>
-                          
-                            {{$data->buku->judul}}
+                            <ul>
+                              @foreach($data->buku  as $buku)
+                                <li>{{$buku->judul}}</li>
+                              @endforeach                              
+                            </ul>
                           
                           </td>
 
