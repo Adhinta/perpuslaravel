@@ -233,23 +233,27 @@ public function transaksiExcel(Request $request)
             $row->setFontWeight('bold');
         });
 
-        $q = Transaksi::query();
+        // $q = Transaksi::query();
+        $where = [];
 
         if($request->get('status')) 
         {
              if($request->get('status') == 'pinjam') {
-                $q->where('status', 'pinjam');
+                $where['status'] = 'pinjam';
             } else {
-                $q->where('status', 'kembali');
+                $where['status'] = 'kembali';
             }
         }
 
+
         if(Auth::user()->level == 'user')
         {
-            $q->where('anggota_id', Auth::user()->anggota->id);
+            $where['anggota'] = Auth::user()->anggota->id;
+            // $q->where('anggota_id', Auth::user()->anggota->id);
         }
 
-        $datas = $q->get();
+        $datas = Transaksi::books($where);
+        // $datas = $q->get();
 
        // $sheet->appendRow(array_keys($datas[0]));
         $sheet->row($sheet->getHighestRow(), function ($row) {
@@ -257,23 +261,33 @@ public function transaksiExcel(Request $request)
         });
 
          $datasheet = array();
-         $datasheet[0]  =   array("NO", "KODE TRANSAKSI", "BUKU", "PEMINJAM",  "TGL PINJAM","TGL KEMBALI","STATUS", "KET");
+         $datasheet[]  =   array("NO", "KODE TRANSAKSI", "BUKU", "PEMINJAM",  "TGL PINJAM","TGL KEMBALI","STATUS", "KET");
          $i=1;
 
         foreach ($datas as $data) {
-
+            $books = $data->buku;
+            $totalBooks = count($books);
+            // dd($books[0]);
            // $sheet->appendrow($data);
-          $datasheet[$i] = array($i,
+          $datasheet[] = array($i,
                         $data['kode_transaksi'],
-                        $data->buku->judul,
+                        // $data->buku->judul,
+                        $books[0]->judul ?? '',
                         $data->anggota->nama,
                         date('d/m/y', strtotime($data['tgl_pinjam'])),
                         date('d/m/y', strtotime($data['tgl_kembali'])),
                         $data['status'],
                         $data['ket']
                     );
-          
+
+
+          for($a = 1; $a < $totalBooks; $a++){
+            $datasheet[] = ['', '', $books[$a]->judul, '', '', '', '', ''];
+          };
+          $datasheet[] = ['', ''];
+
           $i++;
+
         }
 
         $sheet->fromArray($datasheet);
