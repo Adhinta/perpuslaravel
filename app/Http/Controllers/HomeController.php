@@ -37,7 +37,7 @@ class HomeController extends Controller
         if(Auth::user()->level == 'user')
         {
             $datas = Transaksi::books([
-                'stauts'=>'pinjam',
+                'status'=>'pinjam',
                 'anggota'=>Auth::user()->anggota->id
             ]);
 
