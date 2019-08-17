@@ -38,7 +38,7 @@ class HomeController extends Controller
         {
             $datas = Transaksi::books([
                 'status'=>'pinjam',
-                'anggota'=>Auth::user()->anggota->id
+                'anggota_id'=>Auth::user()->id
             ]);
 
         } else {

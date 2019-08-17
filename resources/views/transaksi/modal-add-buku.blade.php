@@ -2,7 +2,13 @@
   <div class="modal-dialog modal-lg" role="document" >
     <div class="modal-content" style="background: #fff;">
       <div class="modal-header">
+            <div style="display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;">
         <h5 class="modal-title">Cari Buku</h5>
+        <input id="search-buku" type="text" class="form-control" placeholder="Masukan kata kunci..." style="width:300px;">
+            </div>
         <button type="button" class="close" data-dismiss="modal" aria-label="Close">
           <span aria-hidden="true">&times;</span>
         </button>
@@ -27,7 +33,7 @@
                         @foreach($bukus as $data)
                         <tr class="pilih" 
                             data-buku_id="{{$data->id}}>" 
-                            data-buku_judul="{{$data->judul}}">
+                            data-buku_judul="{{strtolower($data->judul)}}">
                             <td>
                                 @if($data->cover)
                                     <img src="{{url('images/buku/'. $data->cover)}}" alt="image" style="margin-right: 10px;" />

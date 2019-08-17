@@ -97,6 +97,7 @@
     </div>
     <!-- page-body-wrapper ends -->
   </div>
+  <script src="{{asset('js/jquery.min.js')}}"></script>
   <script src="{{asset('vendors/js/vendor.bundle.base.js')}}"></script>
   <script src="{{asset('vendors/js/vendor.bundle.addons.js')}}"></script>
   <script src="{{asset('js/off-canvas.js')}}"></script>
