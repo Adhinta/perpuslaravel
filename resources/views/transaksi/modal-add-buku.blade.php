@@ -24,7 +24,6 @@
                             <th>Judul</th>
                             <th>ISBN</th>
                             <th>Pengarang</th>
-                            <th>Tahun</th>
                             <th>Stok</th>
                             <th>Check</th>
                         </tr>
@@ -44,7 +43,6 @@
                             </td>
                             <td>{{$data->isbn}}</td>
                             <td>{{$data->pengarang}}</td>
-                            <td>{{$data->tahun_terbit}}</td>
                             <td>{{$data->jumlah_buku}}</td>
                             <td>
                                 <input type="checkbox" name="buku_pinjam[]" value="{{$data->id}}">
